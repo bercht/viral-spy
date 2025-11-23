@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, scrapings, InsertScraping, chatMessages, InsertChatMessage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,43 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Scraping queries
+export async function createScraping(data: InsertScraping) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(scrapings).values(data);
+  return result[0].insertId;
+}
+
+export async function updateScraping(id: number, data: Partial<InsertScraping>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(scrapings).set(data).where(eq(scrapings.id, id));
+}
+
+export async function getScrapingById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(scrapings).where(eq(scrapings.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getUserScrapings(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(scrapings).where(eq(scrapings.userId, userId)).orderBy(scrapings.createdAt);
+}
+
+// Chat queries
+export async function createChatMessage(data: InsertChatMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(chatMessages).values(data);
+  return result[0].insertId;
+}
+
+export async function getChatMessages(scrapingId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(chatMessages).where(eq(chatMessages.scrapingId, scrapingId)).orderBy(chatMessages.createdAt);
+}
