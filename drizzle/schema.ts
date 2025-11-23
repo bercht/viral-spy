@@ -38,6 +38,7 @@ export const scrapings = mysqlTable("scrapings", {
   analysisUrl: text("analysisUrl"), // Google Sheets URL with analysis
   assistantId: text("assistantId"), // OpenAI Assistant ID
   assistantUrl: text("assistantUrl"), // OpenAI Assistant playground URL
+  threadId: text("threadId"), // OpenAI Thread ID for chat
   errorMessage: text("errorMessage"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

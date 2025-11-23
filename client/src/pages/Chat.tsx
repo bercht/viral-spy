@@ -35,6 +35,8 @@ export default function Chat() {
     },
   });
 
+  const isAssistantTyping = sendMessage.isPending;
+
   const utils = trpc.useUtils();
 
   useEffect(() => {
@@ -129,6 +131,22 @@ export default function Chat() {
                     )}
                   </div>
                 ))}
+                {isAssistantTyping && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-purple-600" />
+                      </div>
+                    </div>
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </>
             ) : (

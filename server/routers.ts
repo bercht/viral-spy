@@ -92,6 +92,11 @@ export const appRouter = router({
         message: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          throw new Error("OpenAI API key not configured");
+        }
+
         // Save user message
         await createChatMessage({
           scrapingId: input.scrapingId,
@@ -99,15 +104,109 @@ export const appRouter = router({
           content: input.message,
         });
 
-        // Get scraping to get assistant ID
+        // Get scraping to get assistant ID and thread ID
         const scraping = await getScrapingById(input.scrapingId);
         if (!scraping?.assistantId) {
-          throw new Error("Assistant not ready yet");
+          throw new Error("Assistant not ready yet. Please wait for the analysis to complete.");
         }
 
-        // Call OpenAI Assistant API (simplified - you'll need to implement full assistant logic)
-        // For now, just return a placeholder response
-        const assistantResponse = "Funcionalidade de chat será implementada em breve";
+        let threadId = scraping.threadId;
+
+        // Create thread if it doesn't exist
+        if (!threadId) {
+          const threadResponse = await fetch("https://api.openai.com/v1/threads", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "OpenAI-Beta": "assistants=v2",
+            },
+          });
+
+          if (!threadResponse.ok) {
+            throw new Error("Failed to create thread");
+          }
+
+          const thread = await threadResponse.json();
+          threadId = thread.id;
+
+          // Save thread ID
+          await updateScraping(input.scrapingId, { threadId });
+        }
+
+        // Add message to thread
+        await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2",
+          },
+          body: JSON.stringify({
+            role: "user",
+            content: input.message,
+          }),
+        });
+
+        // Run the assistant
+        const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2",
+          },
+          body: JSON.stringify({
+            assistant_id: scraping.assistantId,
+          }),
+        });
+
+        if (!runResponse.ok) {
+          throw new Error("Failed to run assistant");
+        }
+
+        const run = await runResponse.json();
+
+        // Poll for completion
+        let runStatus = run.status;
+        let attempts = 0;
+        const maxAttempts = 30; // 30 seconds max
+
+        while (runStatus !== "completed" && runStatus !== "failed" && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "OpenAI-Beta": "assistants=v2",
+            },
+          });
+
+          const statusData = await statusResponse.json();
+          runStatus = statusData.status;
+          attempts++;
+        }
+
+        if (runStatus !== "completed") {
+          throw new Error("Assistant run did not complete in time");
+        }
+
+        // Get the assistant's response
+        const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "OpenAI-Beta": "assistants=v2",
+          },
+        });
+
+        const messagesData = await messagesResponse.json();
+        const assistantMessage = messagesData.data.find((msg: any) => msg.role === "assistant" && msg.run_id === run.id);
+
+        if (!assistantMessage) {
+          throw new Error("No response from assistant");
+        }
+
+        const assistantResponse = assistantMessage.content[0].text.value;
 
         // Save assistant message
         await createChatMessage({

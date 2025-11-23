@@ -37,3 +37,10 @@
 - [x] Testar chat com Assistant
 - [x] Criar checkpoint
 - [x] Documentar instruções de uso
+
+## Implementação de Chat Real com OpenAI
+- [x] Configurar API key da OpenAI
+- [x] Implementar criação de thread
+- [x] Implementar envio de mensagens
+- [x] Implementar polling de respostas
+- [x] Testar chat funcional

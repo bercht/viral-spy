@@ -15,6 +15,13 @@
       "when": 1763912061168,
       "tag": "0001_hesitant_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1763912741169,
+      "tag": "0002_cooing_bullseye",
+      "breakpoints": true
     }
   ]
 }
