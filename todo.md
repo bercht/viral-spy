@@ -44,3 +44,8 @@
 - [x] Implementar envio de mensagens
 - [x] Implementar polling de respostas
 - [x] Testar chat funcional
+
+## Deploy e Repositório
+- [ ] Criar repositório no GitHub
+- [ ] Push do código para o GitHub
+- [ ] Criar README com instruções
